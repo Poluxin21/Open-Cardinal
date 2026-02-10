@@ -1,0 +1,36 @@
+syntax = "proto3";
+package cardinal.core;
+
+service Sentinel {
+  rpc Sync (Pulse) returns (Reaction);
+}
+
+// agent state
+message Pulse {
+  string agent_id = 1;       // "robot_agent"
+  int64 timestamp = 2;       // Unix Epoch
+  
+  // Ex: {"fuel": "80%", "altitude": "5000", "hp": "100"}
+  map<string, string> telemetry = 3; 
+}
+
+// cardinal outbound
+message Reaction {
+  string trace_id = 1; // log agent
+
+  enum ActionType {
+    IDLE = 0;           // Idle
+    SHUTDOWN = 1;       // Shutdown Agent
+    RESTART = 2;        // Restart Process
+    CUSTOM = 3;         // Other Action
+  }
+  
+  ActionType type = 2;
+
+  // If custom: Action Name
+  string command_name = 3;
+
+  // action params.
+  // Ex: if command_name="GIVE_ITEM", params={"item_id": "sword", "qtd": "1"}
+  map<string, string> parameters = 4;
+}
