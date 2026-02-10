@@ -171,17 +171,6 @@ Contributions are welcome!
 
 ---
 
-## 🗺️ Roadmap
-
-* [x] Core gRPC Server & Client
-* [x] Lua Engine Integration (mlua)
-* [x] Hot-Reload Strategy (File Watcher)
-* [ ] Distributed Tracing (OpenTelemetry)
-* [ ] Docker / Kubernetes Sidecar Support
-* [ ] Web Dashboard (WASM)
-
----
-
 ## 📜 License
 
 Distributed under the **MIT License**.
