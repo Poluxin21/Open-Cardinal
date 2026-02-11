@@ -51,14 +51,6 @@ cargo run --bin client -- simulate --id "Rocket_01" --interval 500
 
 ---
 
-## Stack Tecnológica
-
-* **Core**: Rust (Tokio, Tonic, Prost)
-* **Scripting**: Lua 5.5 (mlua)
-* **Observabilidade**: OpenTelemetry & Tracing
-
----
-
 ## Contribuindo
 
 Contribuições são bem-vindas! Por favor, leia nosso **Guia de Contribuição** e verifique a aba **Issues**.
