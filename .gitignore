@@ -1,1 +1,4 @@
 /target
+/src/generated
+[D][d]ockerfile.cross
+[C][c]ross.toml
