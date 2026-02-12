@@ -1,7 +1,7 @@
 use sysinfo::System;
 use tokio::fs;
 
-use crate::healthsys::models::sys_json::SysJson;
+use crate::kernel::models::sys_json::SysJson;
 
 pub fn collect(sys: &mut System) -> Result<SysJson, Box<dyn std::error::Error>> {
     sys.refresh_cpu();
