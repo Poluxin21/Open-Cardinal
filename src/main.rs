@@ -10,6 +10,7 @@ use sysinfo::System;
 use kernel::kernel::run;
 
 use crate::g_rpc::g_rpc::run_grpc_server;
+use crate::http_server::http_server::run_http_server;
 use crate::kernel::log::log::init_logger;
 
 #[tokio::main]
@@ -29,6 +30,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tokio::spawn(async {
         if let Err(e) = run_grpc_server().await {
             error!("GRPC crashed: {:?}", e);
+        }
+    });
+
+    info!("Started Cardinal Http System");
+    tokio::spawn(async {
+        if let Err(e) = run_http_server().await {
+            error!("Http crashed: {:?}", e);
         }
     });
 
