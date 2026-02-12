@@ -17,7 +17,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let sys = System::new_all();
     let _log_guard = init_logger().await;
 
-    info!("Inicializando Cardinal General System");
+    info!("Started Cardinal General System");
     tokio::spawn(async move {
         if let Err(e) = run(sys).await {
             error!("Cardinal crashed: {:?}", e);
@@ -25,7 +25,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     
-    info!("Inicializando Cardinal GRPC System");
+    info!("Started Cardinal GRPC System");
     tokio::spawn(async {
         if let Err(e) = run_grpc_server().await {
             error!("GRPC crashed: {:?}", e);

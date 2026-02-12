@@ -38,8 +38,8 @@ pub async fn run_grpc_server() -> Result<(), Box<dyn std::error::Error>> {
     let addr = "[::1]:50051".parse()?;
     let service = CardinalService::default();
 
-    println!("🚀 Cardinal gRPC Server ouvindo em {}", addr);
-    info!("🚀 Cardinal gRPC Server ouvindo em {}", addr);
+    println!("🚀 Cardinal gRPC Server listening em {}", addr);
+    info!("🚀 Cardinal gRPC Server listening em {}", addr);
 
     Server::builder()
         .add_service(SentinelServer::new(service))

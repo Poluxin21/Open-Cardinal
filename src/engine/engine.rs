@@ -59,7 +59,7 @@ impl RuleEngine {
                         if priority >= 1000 { break; }
                     }
                 },
-                Err(e) => tracing::error!("⚠️ Erro no script {}: {}", path.display(), e),
+                Err(e) => tracing::error!("⚠️ Error on script {}: {}", path.display(), e),
             }
         }
 
