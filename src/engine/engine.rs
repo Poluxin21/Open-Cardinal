@@ -7,7 +7,7 @@ use super::models::lua_input::LuaInput;
 use super::models::lua_output::LuaOutput;
 
 #[allow(non_snake_case)]
-use crate::g_rpc::grpc_module::cardinal_core::{Pulse, Reaction};
+use crate::g_rpc::g_rpc::cardinal_core::{Pulse, Reaction};
 
 pub struct RuleEngine;
 

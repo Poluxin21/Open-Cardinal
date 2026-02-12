@@ -1,1 +1,1 @@
-pub mod grpc_module;
+pub mod g_rpc;

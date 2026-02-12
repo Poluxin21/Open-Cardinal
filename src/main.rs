@@ -1,16 +1,16 @@
 mod kernel;
 mod g_rpc;
 mod engine; 
-
+mod http_server;
 use tracing::{info, error};
 
-pub use g_rpc::grpc_module::cardinal_core;
+pub use g_rpc::g_rpc::cardinal_core;
 
 use sysinfo::System;
-use kernel::cardinal_kernel::run;
+use kernel::kernel::run;
 
-use crate::g_rpc::grpc_module::run_grpc_server;
-use crate::kernel::log::log_sys::init_logger;
+use crate::g_rpc::g_rpc::run_grpc_server;
+use crate::kernel::log::log::init_logger;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {

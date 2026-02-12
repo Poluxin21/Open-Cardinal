@@ -2,9 +2,7 @@ use std::path::Path;
 
 use sysinfo::System;
 use tokio::{fs, time::{Duration, sleep}};
-
-use crate::kernel::health::monitor;
-
+use crate::kernel::monitor::monitor;
 pub async fn run(mut sys: System) -> Result<(), Box<dyn std::error::Error>> {
     let dirs = [
         "logs",

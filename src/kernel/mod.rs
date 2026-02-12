@@ -1,4 +1,4 @@
-pub mod cardinal_kernel;
+pub mod kernel;
 pub mod models;
-pub mod health;
+pub mod monitor;
 pub mod log;

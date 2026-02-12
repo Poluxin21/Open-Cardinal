@@ -1,1 +1,1 @@
-pub mod log_sys;
+pub mod log;
