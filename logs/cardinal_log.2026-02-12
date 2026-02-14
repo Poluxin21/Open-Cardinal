@@ -1,5 +1,0 @@
-2026-02-12T05:20:33.045765Z  INFO Started Cardinal General System
-2026-02-12T05:20:33.045955Z  INFO Started Cardinal GRPC System
-2026-02-12T05:20:33.045983Z  INFO Started Cardinal Http System
-2026-02-12T05:20:33.046218Z  INFO 🚀 Cardinal gRPC Server listening em [::1]:50051
-2026-02-12T05:21:00.243333Z  INFO Shutdown signal received

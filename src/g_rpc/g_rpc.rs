@@ -28,8 +28,9 @@ impl Sentinel for CardinalService {
         let reply = RuleEngine::process(&pulse).await;
         
         let end = recieved.elapsed();
-        info!("📡 Recebido de {}: {:?}  {:.2?}", pulse.agent_id, pulse.telemetry, end);
-
+        info!("Recieved from {}: {:?}  {:.2?}", pulse.agent_id, pulse.telemetry, end);
+        info!("Reaction to {} => type: {}, command: {}", reply.trace_id, reply.r#type, reply.command_name);
+        
         Ok(Response::new(reply))
     }
 }
@@ -38,8 +39,8 @@ pub async fn run_grpc_server() -> Result<(), Box<dyn std::error::Error>> {
     let addr = "[::1]:50051".parse()?;
     let service = CardinalService::default();
 
-    println!("🚀 Cardinal gRPC Server listening em {}", addr);
-    info!("🚀 Cardinal gRPC Server listening em {}", addr);
+    println!("Cardinal gRPC Server listening em {}", addr);
+    info!("Cardinal gRPC Server listening em {}", addr);
 
     Server::builder()
         .add_service(SentinelServer::new(service))

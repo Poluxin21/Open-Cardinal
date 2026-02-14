@@ -74,6 +74,7 @@ impl RuleEngine {
         
         let value: mlua::Value = lua.load(script_content).eval()?;
         
+        
         let output: LuaOutput = lua.from_value(value)?;
         
         Ok(output)
