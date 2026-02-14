@@ -7,7 +7,7 @@ use super::models::lua_input::LuaInput;
 use super::models::lua_output::LuaOutput;
 
 #[allow(non_snake_case)]
-use crate::gRPC::grpc_module::cardinal_core::{Pulse, Reaction};
+use crate::g_rpc::g_rpc::cardinal_core::{Pulse, Reaction};
 
 pub struct RuleEngine;
 
@@ -59,7 +59,7 @@ impl RuleEngine {
                         if priority >= 1000 { break; }
                     }
                 },
-                Err(e) => eprintln!("⚠️ Erro no script {}: {}", path.display(), e),
+                Err(e) => tracing::error!("⚠️ Error on script {}: {}", path.display(), e),
             }
         }
 
@@ -73,6 +73,7 @@ impl RuleEngine {
         globals.set("pulse", input_value)?;
         
         let value: mlua::Value = lua.load(script_content).eval()?;
+        
         
         let output: LuaOutput = lua.from_value(value)?;
         

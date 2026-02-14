@@ -1,5 +1,7 @@
 use tonic::{transport::Server, Request, Response, Status};
 use crate::engine::engine;
+use tracing::info;
+use std::time::Instant;
 
 pub mod cardinal_core {
     tonic::include_proto!("cardinal.core");
@@ -19,12 +21,16 @@ impl Sentinel for CardinalService {
         request: Request<Pulse>,
     ) -> Result<Response<Reaction>, Status> {
         
+        let recieved = Instant::now();
+
         let pulse = request.into_inner();
         
-        println!("📡 Recebido de {}: {:?}", pulse.agent_id, pulse.telemetry);
-
         let reply = RuleEngine::process(&pulse).await;
-
+        
+        let end = recieved.elapsed();
+        info!("Recieved from {}: {:?}  {:.2?}", pulse.agent_id, pulse.telemetry, end);
+        info!("Reaction to {} => type: {}, command: {}", reply.trace_id, reply.r#type, reply.command_name);
+        
         Ok(Response::new(reply))
     }
 }
@@ -33,7 +39,8 @@ pub async fn run_grpc_server() -> Result<(), Box<dyn std::error::Error>> {
     let addr = "[::1]:50051".parse()?;
     let service = CardinalService::default();
 
-    println!("🚀 Cardinal gRPC Server ouvindo em {}", addr);
+    println!("Cardinal gRPC Server listening em {}", addr);
+    info!("Cardinal gRPC Server listening em {}", addr);
 
     Server::builder()
         .add_service(SentinelServer::new(service))

@@ -1,35 +1,47 @@
-mod healthsys;
-mod gRPC;
+mod kernel;
+mod g_rpc;
 mod engine; 
-pub use gRPC::grpc_module::cardinal_core;
+mod http_server;
+use tracing::{info, error};
+
+pub use g_rpc::g_rpc::cardinal_core;
 
 use sysinfo::System;
-use healthsys::cardinal_health::run;
+use kernel::kernel::run;
 
-use crate::gRPC::grpc_module::run_grpc_server;
+use crate::g_rpc::g_rpc::run_grpc_server;
+use crate::http_server::http_server::run_http_server;
+use crate::kernel::log::log::init_logger;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let sys = System::new_all();
+    let _log_guard = init_logger().await;
 
-    // Cardinal
-    println!("Inicializando Cardinal Health Systecleam");
+    info!("Started Cardinal General System");
     tokio::spawn(async move {
         if let Err(e) = run(sys).await {
-            eprintln!("Cardinal Health crashed: {:?}", e);
+            error!("Cardinal crashed: {:?}", e);
         }
     });
 
     
-    println!("Inicializando Cardinal GRPC System");
+    info!("Started Cardinal GRPC System");
     tokio::spawn(async {
         if let Err(e) = run_grpc_server().await {
-            eprintln!("GRPC crashed: {:?}", e);
+            error!("GRPC crashed: {:?}", e);
+        }
+    });
+
+    info!("Started Cardinal Http System");
+    tokio::spawn(async {
+        if let Err(e) = run_http_server().await {
+            error!("Http crashed: {:?}", e);
         }
     });
 
     tokio::signal::ctrl_c().await?;
-    println!("Shutdown signal received");
+    info!("Shutdown signal received");
     
     Ok(())
 }
