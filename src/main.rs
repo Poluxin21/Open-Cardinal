@@ -2,6 +2,9 @@ mod kernel;
 mod g_rpc;
 mod engine; 
 mod http_server;
+use std::sync::Arc;
+use std::sync::atomic::AtomicUsize;
+
 use tracing::{info, error};
 
 pub use g_rpc::g_rpc::cardinal_core;
@@ -17,10 +20,14 @@ use crate::kernel::log::log::init_logger;
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let sys = System::new_all();
     let _log_guard = init_logger().await;
+    let active_connections = Arc::new(AtomicUsize::new(0));
+
+    let grpc_counter = active_connections.clone();
+    let monitor_counter = active_connections.clone();
 
     info!("Started Cardinal General System");
     tokio::spawn(async move {
-        if let Err(e) = run(sys).await {
+        if let Err(e) = run(sys, monitor_counter).await {
             error!("Cardinal crashed: {:?}", e);
         }
     });
@@ -28,7 +35,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     
     info!("Started Cardinal GRPC System");
     tokio::spawn(async {
-        if let Err(e) = run_grpc_server().await {
+        if let Err(e) = run_grpc_server(grpc_counter).await {
             error!("GRPC crashed: {:?}", e);
         }
     });

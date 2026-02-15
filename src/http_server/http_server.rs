@@ -8,8 +8,25 @@ struct AppState {
     json_content: Arc<RwLock<String>>,
 }
 
-async fn watch_json_file(state: AppState) {
+async fn watch_sys_json_file(state: AppState) {
     let path = Path::new("info/sys.json");
+
+    loop {
+        if path.exists() {
+            if let Ok(content) = fs::read_to_string(path).await {
+                let mut data = state.json_content.write().await;
+                if *data != content {
+                    *data = content;
+                }
+            }
+        }
+        
+        tokio::time::sleep(Duration::from_secs(2)).await;
+    }
+}
+
+async fn watch_metrics_json_file(state: AppState) {
+    let path = Path::new("info/metrics.json");
 
     loop {
         if path.exists() {
@@ -30,26 +47,36 @@ async fn get_metrics_handler(State(state): State<AppState>) -> String {
 }
 
 pub async fn run_http_server() -> Result<(), Box<dyn std::error::Error>> {
-    let path = Path::new("info/sys.json");
-    
-    while !path.exists() {
+    let info_path = Path::new("info/sys.json");
+    let metrics_path = Path::new("info/metrics.json");
+
+
+    while !info_path.exists() && !metrics_path.exists() {
         println!("Waiting info sys...");
         tokio::time::sleep(Duration::from_secs(1)).await; 
     }
 
-    let initial_content = fs::read_to_string(path).await?;
+    let initial_sys_content = fs::read_to_string(info_path).await?;
+    let initial_metrics_content = fs::read_to_string(metrics_path).await?;
 
-    let shared_state = AppState {
-        json_content: Arc::new(RwLock::new(initial_content)),
+    let shared_sys_state = AppState {
+        json_content: Arc::new(RwLock::new(initial_sys_content)),
     };
 
-    tokio::spawn(watch_json_file(shared_state.clone()));
+    let shared_metrics_state = AppState {
+        json_content: Arc::new(RwLock::new(initial_metrics_content)),
+    };
+
+    tokio::spawn(watch_sys_json_file(shared_sys_state.clone()));
+    tokio::spawn(watch_metrics_json_file(shared_metrics_state.clone()));
 
     let app = Router::new()
         .route("/metrics", get(get_metrics_handler))
-        .with_state(shared_state);
+        .with_state(shared_metrics_state)
+        .route("/info", get(get_metrics_handler))
+        .with_state(shared_sys_state);
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3001").await?;
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:8080").await?;
     axum::serve(listener, app).await?;
 
     Ok(())
