@@ -1,9 +1,9 @@
-use std::path::Path;
+use std::{path::Path, sync::{Arc, atomic::{AtomicUsize, Ordering}}};
 
 use sysinfo::System;
 use tokio::{fs, time::{Duration, sleep}};
 use crate::kernel::monitor::monitor;
-pub async fn run(mut sys: System) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn run(mut sys: System, active_connections_monitor: Arc<AtomicUsize>) -> Result<(), Box<dyn std::error::Error>> {
     let dirs = [
         "logs",
         "rules/default",
@@ -26,9 +26,10 @@ pub async fn run(mut sys: System) -> Result<(), Box<dyn std::error::Error>> {
     loop {
         let total_agents = get_total_agents().await?;
         let agents_detected = get_total_rules().await?;
+        let current_connections = active_connections_monitor.load(Ordering::Relaxed) as i32;
 
         let payload = monitor::collect_sys(&mut sys)?;
-        monitor::persist(&payload, &total_agents, &agents_detected).await?;
+        monitor::persist(&payload, &total_agents, &agents_detected, current_connections).await?;
 
         sleep(Duration::from_secs(1)).await;
     }
