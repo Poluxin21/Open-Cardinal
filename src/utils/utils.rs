@@ -1,6 +1,4 @@
 use std::{fs::File, io::{BufReader, Error}, path::Path};
-
-use tokio::fs;
 use tracing::info;
 
 use crate::kernel::models::sys_json::ConfigJson;

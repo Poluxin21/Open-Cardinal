@@ -1,6 +1,5 @@
 use std::path::Path;
-use tracing::{info, error};
-use redb::{Database, Error, ReadableDatabase, ReadableTable, TableDefinition};
+use redb::{Database, Error, ReadableDatabase, TableDefinition};
 
 use crate::utils::utils::load_config_file;
 const TABLE: TableDefinition<&str, u64> = TableDefinition::new("open_cardinal");

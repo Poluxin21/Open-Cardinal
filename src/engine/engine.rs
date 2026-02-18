@@ -6,6 +6,7 @@ use std::collections::HashMap;
 use super::models::lua_input::LuaInput;
 use super::models::lua_output::LuaOutput;
 
+use crate::engine::storage::{readDb, writeDb};
 #[allow(non_snake_case)]
 use crate::g_rpc::g_rpc::cardinal_core::{Pulse, Reaction};
 
@@ -102,5 +103,23 @@ impl RuleEngine {
             command_name: msg.to_string(),
             parameters: HashMap::new(),
         }
+    }
+
+    async fn inject_redb_api(lua: &Lua) -> LuaResult<()> {
+        let redb_api = lua.create_table()?;
+
+        redb_api.set("set", lua.create_function(|_, (key, value): (String, u64)| {
+            writeDb(key.as_str(), value);
+            Ok(())
+        })?)?;
+
+        redb_api.set("get", lua.create_function(|_, key: String| {
+            readDb(key.as_str());
+            Ok(())
+        })?)?;
+        
+        lua.globals().set(  "redb_api", redb_api)?;
+
+        Ok(())
     }
 }
