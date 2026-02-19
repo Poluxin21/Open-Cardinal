@@ -1,0 +1,73 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Build no ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact_name: open-cardinal
+            asset_name: open-cardinal-linux-x86_64
+          - os: windows-latest
+            artifact_name: open-cardinal.exe
+            asset_name: open-cardinal-windows-x86_64.exe
+          - os: macos-latest
+            artifact_name: open-cardinal
+            asset_name: open-cardinal-macos-x86_64
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Configurar Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Instalar Protoc
+        uses: arduino/setup-protoc@v3
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build (Release)
+        run: cargo build --release
+
+      - name: Renomear Binário
+        shell: bash
+        run: |
+          mv target/release/${{ matrix.artifact_name }} target/release/${{ matrix.asset_name }}
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset_name }}
+          path: target/release/${{ matrix.asset_name }}
+          retention-days: 1
+
+  release:
+    name: Criar Draft Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      
+    steps:
+      - name: Baixar Binários
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Publicar Draft Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: "Novo Build (Aguardando Revisão) - ${{ github.sha }}"
+          tag_name: "dev-${{ github.sha }}"
+          draft: true
+          files: artifacts/*
