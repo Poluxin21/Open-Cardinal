@@ -1,7 +1,7 @@
 use std::{io::Error, path::Path, sync::{Arc, atomic::{AtomicUsize, Ordering}}};
 
 use sysinfo::System;
-use tokio::{fs, time::{Duration, sleep}};
+use tokio::{fs, time::{Duration, Sleep, sleep}};
 use crate::kernel::{models::sys_json::ConfigJson, monitor::monitor};
 pub async fn run(mut sys: System, active_connections_monitor: Arc<AtomicUsize>) -> Result<(), Box<dyn std::error::Error>> {
     let dirs = [
@@ -25,7 +25,11 @@ pub async fn run(mut sys: System, active_connections_monitor: Arc<AtomicUsize>) 
         }
     }
 
-    if !Path::new("config/config.json").exists() {
+    while !Path::new("config/config.json").exists() {
+        sleep(Duration::from_secs(2)).await;
+    }
+
+    if Path::new("config/config.json").exists() {
         setup_config_file().await?;
     }
  
