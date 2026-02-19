@@ -2,6 +2,8 @@ mod kernel;
 mod g_rpc;
 mod engine; 
 mod http_server;
+mod utils;
+
 use std::sync::Arc;
 use std::sync::atomic::AtomicUsize;
 

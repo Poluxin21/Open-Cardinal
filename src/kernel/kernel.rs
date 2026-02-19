@@ -1,12 +1,13 @@
-use std::{path::Path, sync::{Arc, atomic::{AtomicUsize, Ordering}}};
+use std::{io::Error, path::Path, sync::{Arc, atomic::{AtomicUsize, Ordering}}};
 
 use sysinfo::System;
-use tokio::{fs, time::{Duration, sleep}};
-use crate::kernel::monitor::monitor;
+use tokio::{fs, time::{Duration, Sleep, sleep}};
+use crate::kernel::{models::sys_json::ConfigJson, monitor::monitor};
 pub async fn run(mut sys: System, active_connections_monitor: Arc<AtomicUsize>) -> Result<(), Box<dyn std::error::Error>> {
     let dirs = [
         "logs",
         "rules/default",
+        "config"
     ];
 
     for dir in dirs {
@@ -14,13 +15,22 @@ pub async fn run(mut sys: System, active_connections_monitor: Arc<AtomicUsize>) 
     }
 
     let files = [
-        "rules/default/default.lua"
+        "rules/default/default.lua",
+        "config/config.json"
     ];
     
     for file in files {
         if !Path::new(file).exists() {
             fs::File::create(file).await?;
         }
+    }
+
+    while !Path::new("config/config.json").exists() {
+        sleep(Duration::from_secs(2)).await;
+    }
+
+    if Path::new("config/config.json").exists() {
+        setup_config_file().await?;
     }
  
     loop {
@@ -35,7 +45,7 @@ pub async fn run(mut sys: System, active_connections_monitor: Arc<AtomicUsize>) 
     }
 }
 
-pub async fn get_total_rules() -> Result<i32, Box<dyn std::error::Error>> {
+async fn get_total_rules() -> Result<i32, Box<dyn std::error::Error>> {
     let mut rules_dir = fs::read_dir("rules").await?;
     let mut total = 0;
 
@@ -60,7 +70,7 @@ pub async fn get_total_rules() -> Result<i32, Box<dyn std::error::Error>> {
     Ok(total)
 }
 
-pub async fn get_total_agents() -> Result<i32, Box<dyn std::error::Error>> {
+async fn get_total_agents() -> Result<i32, Box<dyn std::error::Error>> {
     let mut rules_dir= fs::read_dir("rules").await?;
     let mut agentsint = 0;
     while let Some(entry) = rules_dir.next_entry().await? {
@@ -75,4 +85,18 @@ pub async fn get_total_agents() -> Result<i32, Box<dyn std::error::Error>> {
 
     Ok(agentsint)
 
+}
+
+async fn setup_config_file() -> Result<(), Error> {
+    let filename= "open_cardinal.db";
+    
+    let config = ConfigJson {
+        grpc_port: 50051,
+        http_port: 8080,
+        db_file: filename.to_string(),
+    };
+
+    let config_json = serde_json::to_string(&config)?;
+    fs::write("config/config.json", config_json).await?;
+    Ok(())
 }

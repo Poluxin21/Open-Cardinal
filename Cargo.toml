@@ -15,7 +15,7 @@ tonic = "0.14.3"
 prost = "0.14.3"
 tokio-stream = "0.1"
 tonic-prost = "0.14.3"
-mlua = { version = "0.11.6", features = ["lua55", "vendored", "serialize"] }
+mlua = { version = "0.11.6", features = ["lua55", "vendored", "serialize", "async", "send"] }
 clap = { version = "4.4", features = ["derive"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["fmt", "time"] }
@@ -23,6 +23,7 @@ tracing-appender = "0.2"
 chrono = "0.4"
 memmap2 = "0.9.9"
 axum = "0.8.8"
+redb = "3.1.0"
 
 [build-dependencies]
 tonic-prost-build = "0.14.3"
