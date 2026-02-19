@@ -4,7 +4,7 @@ use redb::{Database, Error, ReadableDatabase, TableDefinition};
 use crate::utils::utils::load_config_file;
 const TABLE: TableDefinition<&str, u64> = TableDefinition::new("open_cardinal");
 
-pub async fn writeDb(key: &str, value: u64) -> Result<(), Error> {
+pub async fn write_db(key: &str, value: u64) -> Result<(), Error> {
     let config = load_config_file().await?;
     let db: Database;
 
@@ -23,7 +23,7 @@ pub async fn writeDb(key: &str, value: u64) -> Result<(), Error> {
     Ok(())
 }
 
-pub async fn readDb(key: &str) -> Result<u64, Error> {
+pub async fn read_db(key: &str) -> Result<u64, Error> {
     let config = load_config_file().await?;
     let db: Database;
 

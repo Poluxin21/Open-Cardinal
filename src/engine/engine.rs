@@ -1,12 +1,13 @@
 use std::path::{Path, PathBuf};
 use tokio::fs;
 use mlua::prelude::*;
+use tracing::error;
 use std::collections::HashMap;
 
 use super::models::lua_input::LuaInput;
 use super::models::lua_output::LuaOutput;
 
-use crate::engine::storage::{readDb, writeDb};
+use crate::engine::storage::{read_db, write_db};
 #[allow(non_snake_case)]
 use crate::g_rpc::g_rpc::cardinal_core::{Pulse, Reaction};
 
@@ -41,6 +42,10 @@ impl RuleEngine {
         }
         
         let lua = Lua::new();
+
+        if let Err(e) = Self::inject_redb_api(&lua).await {
+            error!("Redb inject error {}", e);
+        }
         
         let input = LuaInput { 
             agent_id: &pulse.agent_id, 
@@ -51,7 +56,7 @@ impl RuleEngine {
         let mut max_priority = -1;
 
         for (path, script_content) in scripts {
-            match Self::run_script(&lua, &script_content, &input) {
+            match Self::run_script(&lua, &script_content, &input).await {
                 Ok(output) => {
                     let priority = output.priority.unwrap_or(0);
                     if priority > max_priority {
@@ -67,14 +72,13 @@ impl RuleEngine {
         best_reaction
     }
 
-    fn run_script(lua: &Lua, script_content: &str, input: &LuaInput) -> LuaResult<LuaOutput> {
+    async fn run_script(lua: &Lua, script_content: &str, input: &LuaInput<'_>) -> LuaResult<LuaOutput> {
         let input_value = lua.to_value(input)?;
         
         let globals = lua.globals();
         globals.set("pulse", input_value)?;
         
-        let value: mlua::Value = lua.load(script_content).eval()?;
-        
+        let value: mlua::Value = lua.load(script_content).eval_async().await?;
         
         let output: LuaOutput = lua.from_value(value)?;
         
@@ -108,18 +112,17 @@ impl RuleEngine {
     async fn inject_redb_api(lua: &Lua) -> LuaResult<()> {
         let redb_api = lua.create_table()?;
 
-        redb_api.set("set", lua.create_function(|_, (key, value): (String, u64)| {
-            writeDb(key.as_str(), value);
+        redb_api.set("set", lua.create_async_function(|_, (key, value): (String, u64)| async move {
+            write_db(key.as_str(), value).await.map_err(mlua::Error::external)?;
             Ok(())
         })?)?;
 
-        redb_api.set("get", lua.create_function(|_, key: String| {
-            readDb(key.as_str());
+        redb_api.set("get", lua.create_async_function(|_, key: String| async move {
+            read_db(key.as_str()).await.map_err(mlua::Error::external)?;
             Ok(())
         })?)?;
         
-        lua.globals().set(  "redb_api", redb_api)?;
-
+        lua.globals().set("redb_api", redb_api)?;
         Ok(())
     }
 }

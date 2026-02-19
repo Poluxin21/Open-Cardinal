@@ -15,7 +15,7 @@ tonic = "0.14.3"
 prost = "0.14.3"
 tokio-stream = "0.1"
 tonic-prost = "0.14.3"
-mlua = { version = "0.11.6", features = ["lua55", "vendored", "serialize"] }
+mlua = { version = "0.11.6", features = ["lua55", "vendored", "serialize", "async", "send"] }
 clap = { version = "4.4", features = ["derive"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["fmt", "time"] }
