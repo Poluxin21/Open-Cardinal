@@ -1,8 +1,8 @@
 use std::{io::Error, path::Path, sync::{Arc, atomic::{AtomicUsize, Ordering}}};
 
 use sysinfo::System;
-use tokio::{fs, time::{Duration, Sleep, sleep}};
-use crate::kernel::{models::sys_json::ConfigJson, monitor::monitor};
+use tokio::{fs, time::{Duration, sleep}};
+use crate::kernel::{models::sys_json::ConfigJson, monitor::{monitor, watcher::watch_file}};
 pub async fn run(mut sys: System, active_connections_monitor: Arc<AtomicUsize>) -> Result<(), Box<dyn std::error::Error>> {
     let dirs = [
         "logs",
@@ -40,6 +40,8 @@ pub async fn run(mut sys: System, active_connections_monitor: Arc<AtomicUsize>) 
 
         let payload = monitor::collect_sys(&mut sys)?;
         monitor::persist(&payload, &total_agents, &agents_detected, current_connections).await?;
+
+        watch_file().await?;
 
         sleep(Duration::from_secs(1)).await;
     }
