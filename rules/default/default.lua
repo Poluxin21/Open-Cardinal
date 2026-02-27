@@ -1,1 +1,1 @@
-local teste = teste
+local a = "a

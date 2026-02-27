@@ -1,30 +1,33 @@
-use std::{path::Path, sync::mpsc::channel};
+use notify::{RecursiveMode, Watcher};
+use std::path::Path;
+use tokio::sync::mpsc;
 
-use notify::{Result, Watcher};
-use tracing::{error, info};
-     
-pub async fn watch_file() -> Result<()> {
-    let (tx, rx) = channel();
+pub struct LuaWatcher {
+    _watcher: notify::RecommendedWatcher,
+    pub rx: mpsc::Receiver<()>,
+}
 
-    let rules = Path::new("rules");
+pub fn watch_file() -> notify::Result<LuaWatcher> {
+    let (tx_async, rx_async) = mpsc::channel(10);
+    let (tx, rx) = std::sync::mpsc::channel();
 
     let mut watcher = notify::recommended_watcher(tx)?;
-    watcher.watch(rules, notify::RecursiveMode::Recursive)?;
+    watcher.watch(Path::new("rules"), RecursiveMode::Recursive)?;
 
-    for res in rx {
-        match res {
-            Ok(event) => {
-                for path in event.paths {
-                    if path.extension().and_then(|e| e.to_str()) == Some("lua") {
-                        info!("Rule updated: {:?}", path);
-                    }
+    std::thread::spawn(move || {
+        for res in rx {
+            if let Ok(event) = res {
+                if event.paths.iter().any(|p| {
+                    p.extension().and_then(|e| e.to_str()) == Some("lua")
+                }) {
+                    let _ = tx_async.blocking_send(());
                 }
             }
-            Err(err) => {
-                error!("watcher error: {:?}", err);
-            }
         }
-    }
+    });
 
-    Ok(())
+    Ok(LuaWatcher {
+        _watcher: watcher,
+        rx: rx_async,
+    })
 }
