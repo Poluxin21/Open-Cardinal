@@ -1,8 +1,9 @@
 use std::{io::Error, path::Path, sync::{Arc, atomic::{AtomicUsize, Ordering}}};
-
+use tracing::error;
 use sysinfo::System;
-use tokio::{fs, time::{Duration, Sleep, sleep}};
-use crate::kernel::{models::sys_json::ConfigJson, monitor::monitor};
+use tokio::{fs, time::{Duration, sleep}};
+use crate::kernel::{models::sys_json::ConfigJson, monitor::{luacheck::lua_check, monitor, watcher::watch_file}};
+
 pub async fn run(mut sys: System, active_connections_monitor: Arc<AtomicUsize>) -> Result<(), Box<dyn std::error::Error>> {
     let dirs = [
         "logs",
@@ -32,7 +33,23 @@ pub async fn run(mut sys: System, active_connections_monitor: Arc<AtomicUsize>) 
     if Path::new("config/config.json").exists() {
         setup_config_file().await?;
     }
- 
+
+    let lua_watcher = watch_file()?;
+    let mut lua_events = lua_watcher.rx;
+
+    tokio::spawn(async move {
+        let _ = check_all_lua_files().await;
+
+        while lua_events.recv().await.is_some() {
+            tokio::time::sleep(Duration::from_millis(300)).await;
+            while lua_events.try_recv().is_ok() {}
+
+            if let Err(e) = check_all_lua_files().await {
+                error!("Check Lua files: {:?}", e);
+            }
+        }
+    });
+
     loop {
         let total_agents = get_total_agents().await?;
         let agents_detected = get_total_rules().await?;
@@ -59,7 +76,7 @@ async fn get_total_rules() -> Result<i32, Box<dyn std::error::Error>> {
                 let file_path = file.path();
 
                 if file_path.is_file()
-                    && file_path.extension().map(|e| e == "lua").unwrap_or(false)
+                    && file_path.extension().and_then(|e| e.to_str()) == Some("lua")
                 {
                     total += 1;
                 }
@@ -75,7 +92,7 @@ async fn get_total_agents() -> Result<i32, Box<dyn std::error::Error>> {
     let mut agentsint = 0;
     while let Some(entry) = rules_dir.next_entry().await? {
         if entry.path().is_dir() {
-            if entry.path().display().to_string() == "default" {
+            if entry.file_name() == "default" {
                 continue;
             }
 
@@ -99,4 +116,35 @@ async fn setup_config_file() -> Result<(), Error> {
     let config_json = serde_json::to_string(&config)?;
     fs::write("config/config.json", config_json).await?;
     Ok(())
+}
+
+async fn check_all_lua_files() -> Result<(), Error> {
+        let mut rules_dir= fs::read_dir("rules").await?;
+        
+        while let Some(entry) = rules_dir.next_entry().await? {
+            let path = entry.path();
+
+            if path.is_dir() {
+                let mut sub_dir = fs::read_dir(path).await?;
+
+                while let Some(file) = sub_dir.next_entry().await? {
+                    let file_path = file.path();
+
+                    if file_path.is_file()
+                        && file_path.extension().and_then(|e| e.to_str()) == Some("lua")
+                    {
+                        let script_content = tokio::fs::read_to_string(&file_path).await?;
+                        let file_name = file_path
+                        .file_name()
+                        .and_then(|n| n.to_str())
+                        .unwrap_or("<unknown>");
+                        
+                        let _ = lua_check(&script_content, file_name).await;
+                        
+                    }
+                }
+            }
+        }
+
+        Ok(())
 }

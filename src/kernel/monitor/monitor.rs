@@ -21,8 +21,6 @@ pub async fn persist(payload: &SysJson, total_agents: &i32, agents_detected: &i3
     let sys_json = serde_json::to_string(payload)?;
     fs::write("info/sys.json", sys_json).await?;
 
-    // let metrics_json
-
     let metrics = MetricsJson {
         agents_detected: *total_agents,
         total_rules: *agents_detected,

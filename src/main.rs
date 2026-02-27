@@ -23,6 +23,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let sys = System::new_all();
     let _log_guard = init_logger().await;
     let active_connections = Arc::new(AtomicUsize::new(0));
+    
 
     let grpc_counter = active_connections.clone();
     let monitor_counter = active_connections.clone();
