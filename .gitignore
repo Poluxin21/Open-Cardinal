@@ -1,3 +1,11 @@
+# Cardinal 
+/info
+/config
+/logs
+/rules
+
+
+# Default
 /target
 /src/generated
 [D][d]ockerfile.cross

@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::SystemTime;
@@ -7,7 +8,9 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tracing::{info, warn, error};
 use serde_json::json;
 
+use crate::cardinal_core::Reaction;
 use crate::cli::protocol::{CliRequest, CliResponse, SOCKET_ADDR};
+use crate::g_rpc::send_to_queue::force_reaction;
 
 static START_SECS: std::sync::OnceLock<u64> = std::sync::OnceLock::new();
 
@@ -113,10 +116,33 @@ async fn handle_request(
                 
                 "healthcliff" => {
                     let agent = flags.get("agent").map(|s| s.as_str()).unwrap_or("default");
-                    let force = flags.get("force").map(|s| s.as_str()).unwrap_or("RUNNING");
+                    
+                    let force: Option<i32> = flags
+                    .get("force")
+                    .and_then(|s| s.parse::<i32>().ok());
+                    
+                    let params = HashMap::new(); 
 
-                    info!("healthcliff: agent={} force={}", agent, force);
-                    CliResponse::ok(format!("Agent '{}' → '{}'", agent, force))
+                    let reaction: Reaction;
+
+                    if let Some(action) = force {
+                            if action != 3 {
+                                reaction = Reaction {
+                                    trace_id: agent.to_string(),
+                                    r#type: action,
+                                    command_name: "".to_string(),
+                                    parameters: params 
+                                };
+
+                                
+                                force_reaction(reaction).await.unwrap();
+                            } else {
+                                // Not Implemented!!
+                            }
+                    }
+
+                    info!("healthcliff: agent={}", agent);
+                    CliResponse::ok(format!("Agent {}", agent))
                 }
                 
                 other     => CliResponse::error(format!("Comando desconhecido: {}", other)),

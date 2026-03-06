@@ -105,7 +105,7 @@ async fn get_total_agents() -> Result<i32, Box<dyn std::error::Error>> {
 }
 
 async fn setup_config_file() -> Result<(), Error> {
-    let filename= "open_cardinal.db";
+    let filename= "open_cardinal.redb";
     
     let config = ConfigJson {
         grpc_port: 50051,
