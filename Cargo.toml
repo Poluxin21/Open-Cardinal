@@ -25,6 +25,7 @@ memmap2 = "0.9.9"
 axum = "0.8.8"
 redb = "3.1.0"
 notify = "8.2.0"
+libc = "0.2.182"
 
 [build-dependencies]
 tonic-prost-build = "0.14.3"
