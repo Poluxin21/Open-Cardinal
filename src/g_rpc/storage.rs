@@ -2,9 +2,9 @@ use std::path::Path;
 use redb::{Database, Error, ReadableDatabase, TableDefinition};
 
 use crate::utils::utils::load_config_file;
-const FORCED_REACTIONS: TableDefinition<&str, &[u8]> = TableDefinition::new("forced_reactions");
+const FORCED_REACTIONS: TableDefinition<&str, i32> = TableDefinition::new("forced_reactions");
 
-pub async fn add_queue(key: &str, value: &[u8]) -> Result<(), Error> {
+pub async fn add_queue(key: &str, value: &i32) -> Result<(), Error> {
     let queuefile = "queue.redb";
     let db: Database;
 
@@ -23,7 +23,7 @@ pub async fn add_queue(key: &str, value: &[u8]) -> Result<(), Error> {
     Ok(())
 }
 
-pub async fn read_queue(key: &str) -> Result<Option<Vec<u8>>, Error> {
+pub async fn read_queue(key: &str) -> Result<Option<i32>, Error> {
     let queuefile = "queue.redb";
 
     let db = if Path::new(queuefile).exists() {
@@ -33,10 +33,10 @@ pub async fn read_queue(key: &str) -> Result<Option<Vec<u8>>, Error> {
     };
 
     let read_txn = db.begin_read()?;
-    let table = read_txn.open_table(FORCED_REACTIONS)?;
+    let table: redb::ReadOnlyTable<&str, i32> = read_txn.open_table(FORCED_REACTIONS)?;
 
     if let Some(value) = table.get(key)? {
-        Ok(Some(value.value().to_vec()))
+        Ok(Some(value.value()))
     } else {
         Ok(None)
     }
@@ -56,8 +56,7 @@ pub async fn remove_queue(key: &str) -> Result<(), Error> {
 
     {
         let mut table = remove_into.open_table(FORCED_REACTIONS)?;
-        
-        table.remove("agent123")?;
+        table.remove(key)?;
     }
 
     remove_into.commit()?;

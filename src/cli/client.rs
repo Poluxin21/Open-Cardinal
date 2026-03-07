@@ -32,7 +32,7 @@ fn command_to_request(cmd: &Commands) -> CliRequest {
         Commands::Stop        => CliRequest::Stop,
         Commands::Reload      => CliRequest::Reload,
         Commands::Stats       => CliRequest::Stats,
-        Commands::Exec { command, args } => CliRequest::Exec {
+        Commands::Heathcliff { command, args } => CliRequest::Heathcliff {
             command: command.clone(),
             args: args.clone(),
         },

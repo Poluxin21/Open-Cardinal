@@ -32,9 +32,13 @@ enum Commands {
     },
     
     Simulate {
+        // Usa '-i' e '--id'
         #[arg(short, long, default_value = "Simulated_Rocket")]
         id: String,
-        #[arg(short, long, default_value_t = 1000)]
+        
+        // 🛠️ CORREÇÃO: Removemos o 'short' para não dar conflito com o '-i' do id.
+        // Agora você usa apenas '--interval' no terminal.
+        #[arg(long, default_value_t = 1000)]
         interval: u64,
     },
 }
@@ -81,7 +85,7 @@ async fn send_pulse(
     let mut rng = rand::thread_rng();
     let mut telemetry = HashMap::new();
     
-    // rocket/airplane data
+    // Dados simulados
     let fuel = rng.gen_range(0..100);
     let altitude = rng.gen_range(0..2000);
     
@@ -89,25 +93,25 @@ async fn send_pulse(
     telemetry.insert("altitude".to_string(), altitude.to_string());
     telemetry.insert("velocity".to_string(), format!("{:.2}", rng.gen_range(0.0..500.0)));
 
-    // 2. create pulse (Protobuf Message)
+    // 2. Criar o Pulse (Protobuf Message)
     let request = tonic::Request::new(Pulse {
         agent_id: agent_id.to_string(),
         timestamp: SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() as i64,
         telemetry: telemetry.clone(),
     });
 
-    // 3. wait reaction
+    // 3. Aguardar a Reaction
     let response = client.sync(request).await?;
     let reaction = response.into_inner();
 
-    // 4. just formatting
+    // 4. Formatar e exibir
     print_reaction(agent_id, telemetry, reaction);
 
     Ok(())
 }
 
 fn print_reaction(agent_id: &str, input: HashMap<String, String>, reaction: cardinal_core::Reaction) {
-    // decode actionType
+    // Decodificar actionType
     let action_display = match reaction.r#type {
         0 => "IDLE",
         1 => "SHUTDOWN",
@@ -120,7 +124,6 @@ fn print_reaction(agent_id: &str, input: HashMap<String, String>, reaction: card
     println!("📤 Enviado [{}]: Combustível: {}% | Alt: {}m", agent_id, input.get("fuel").unwrap(), input.get("altitude").unwrap());
     
     if reaction.r#type != 0 {
-        // reaction
         println!("📥 REAÇÃO CARDINAL: {} | Cmd: {}", action_display, reaction.command_name);
         println!("   Params: {:?}", reaction.parameters);
         

@@ -10,7 +10,7 @@ use serde_json::json;
 
 use crate::cardinal_core::Reaction;
 use crate::cli::protocol::{CliRequest, CliResponse, SOCKET_ADDR};
-use crate::g_rpc::send_to_queue::force_reaction;
+use crate::g_rpc::send_to_queue::{force_reaction, revoke_force};
 
 static START_SECS: std::sync::OnceLock<u64> = std::sync::OnceLock::new();
 
@@ -107,14 +107,21 @@ async fn handle_request(
             std::process::exit(0);
         }
 
-        CliRequest::Exec { command, args } => {
+        CliRequest::Heathcliff { command, args } => {
             let flags = parse_flags(&args);
 
             info!("Exec: {} {:?}", command, args);
             match command.as_str() {
-                "ping"    => CliResponse::ok("pong"),
+                "revoke_force" => {
+                    let agent = flags.get("agent").map(|s| s.as_str()).unwrap_or("default");
+                    
+                    let _ = revoke_force(agent);
+
+                    CliResponse::Ok { message: "Revoke rule with sucess".to_string() }
+
+                },
                 
-                "healthcliff" => {
+                "force" => {
                     let agent = flags.get("agent").map(|s| s.as_str()).unwrap_or("default");
                     
                     let force: Option<i32> = flags
@@ -136,6 +143,7 @@ async fn handle_request(
 
                                 
                                 force_reaction(reaction).await.unwrap();
+                                info!("heathcliff force reaction")
                             } else {
                                 // Not Implemented!!
                             }

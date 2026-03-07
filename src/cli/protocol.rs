@@ -8,7 +8,7 @@ pub enum CliRequest {
     Stop,
     Reload,
     Stats,
-    Exec { command: String, args: Vec<String> },
+    Heathcliff { command: String, args: Vec<String> },
 }
 
 #[derive(Debug, Serialize, Deserialize)]

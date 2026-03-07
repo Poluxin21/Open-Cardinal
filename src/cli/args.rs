@@ -23,7 +23,7 @@ pub enum Commands {
 
     Stats,
 
-    Exec {
+    Heathcliff {
         command: String,
         #[arg(trailing_var_arg = true)]
         args: Vec<String>,

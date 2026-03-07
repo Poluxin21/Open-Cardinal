@@ -21,6 +21,7 @@ use crate::cli::command_server::run_command_server;
 use crate::g_rpc::g_rpc::run_grpc_server;
 use crate::http_server::http_server::run_http_server;
 use crate::kernel::log::log::init_logger;
+use crate::utils::utils::init_databases;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -36,6 +37,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cmd_counter      = active_connections.clone();
     let grpc_counter = active_connections.clone();
     let monitor_counter = active_connections.clone();
+
+    init_databases()?;
 
     info!("Started Cardinal General System");
     tokio::spawn(async move {
