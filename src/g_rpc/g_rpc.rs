@@ -33,13 +33,12 @@ impl Sentinel for CardinalService {
 
         let pulse = request.into_inner();
         let agent_id = pulse.agent_id.clone();
-        let mut reply: Reaction;
+        let reply: Reaction;
 
         if let Some(value) = read_queue(&pulse.agent_id)
             .await
             .map_err(|e| Status::internal(e.to_string()))?
         {
-            println!("{}", value);
             let hashmap = HashMap::new();
             reply = Reaction {
                 trace_id: agent_id,

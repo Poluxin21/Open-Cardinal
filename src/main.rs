@@ -75,14 +75,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-#[cfg(unix)]
-async fn wait_sigterm() {
-    use tokio::signal::unix::{signal, SignalKind};
-    let mut s = signal(SignalKind::terminate()).expect("Failed SIGTERM handler");
-    s.recv().await;
-}
+// #[cfg(unix)]
+// async fn wait_sigterm() {
+//     use tokio::signal::unix::{signal, SignalKind};
+//     let mut s = signal(SignalKind::terminate()).expect("Failed SIGTERM handler");
+//     s.recv().await;
+// }
 
-#[cfg(not(unix))]
-async fn wait_sigterm() {
-    std::future::pending::<()>().await
-}
+// #[cfg(not(unix))]
+// async fn wait_sigterm() {
+//     std::future::pending::<()>().await
+// }

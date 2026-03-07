@@ -1,15 +1,11 @@
 use crate::{cardinal_core::Reaction, g_rpc::storage::{add_queue, remove_queue}};
 
-pub async fn force_reaction(reaction: Reaction) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn force_reaction(reaction: Reaction) {
     let recv = reaction.clone();
     
-    let _ = add_queue(&recv.trace_id, &recv.r#type);
-
-    Ok(())
+    let _result = add_queue(&recv.trace_id, &recv.r#type).await;
 }
 
-pub async fn revoke_force(agent: &str) -> Result<(), Box<dyn std::error::Error>> {
-    let _ = remove_queue(agent);
-
-    Ok(())
+pub async fn revoke_force(agent: &str) {
+    let _result = remove_queue(agent).await;
 }

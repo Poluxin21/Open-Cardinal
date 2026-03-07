@@ -115,7 +115,7 @@ async fn handle_request(
                 "revoke_force" => {
                     let agent = flags.get("agent").map(|s| s.as_str()).unwrap_or("default");
                     
-                    let _ = revoke_force(agent);
+                    revoke_force(agent).await;
 
                     CliResponse::Ok { message: "Revoke rule with sucess".to_string() }
 
@@ -142,7 +142,7 @@ async fn handle_request(
                                 };
 
                                 
-                                force_reaction(reaction).await.unwrap();
+                                force_reaction(reaction).await;
                                 info!("heathcliff force reaction")
                             } else {
                                 // Not Implemented!!

@@ -1,7 +1,6 @@
 use std::path::Path;
 use redb::{Database, Error, ReadableDatabase, TableDefinition};
 
-use crate::utils::utils::load_config_file;
 const FORCED_REACTIONS: TableDefinition<&str, i32> = TableDefinition::new("forced_reactions");
 
 pub async fn add_queue(key: &str, value: &i32) -> Result<(), Error> {
