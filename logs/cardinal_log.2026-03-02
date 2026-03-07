@@ -1,0 +1,6 @@
+2026-03-02T01:25:18.949779Z  INFO Started Cardinal General System
+2026-03-02T01:25:18.949985Z  INFO Started Cardinal GRPC System
+2026-03-02T01:25:18.950021Z  INFO Started Cardinal Http System
+2026-03-02T01:25:18.950274Z  INFO Cardinal gRPC Server listening em [::1]:50051
+2026-03-02T01:25:18.959740Z ERROR Error in script default.lua, error: syntax error: [string "default.lua"]:1: unfinished string near <eof>
+2026-03-02T01:25:20.275176Z  INFO Shutdown signal received

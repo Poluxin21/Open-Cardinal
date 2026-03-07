@@ -1,6 +1,8 @@
 use tonic::{transport::Server, Request, Response, Status};
 use crate::engine::engine;
+use crate::g_rpc::storage::read_queue;
 use tracing::info;
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Instant;
@@ -30,9 +32,24 @@ impl Sentinel for CardinalService {
         let recieved = Instant::now();
 
         let pulse = request.into_inner();
-        
-        let reply = RuleEngine::process(&pulse).await;
-        
+        let agent_id = pulse.agent_id.clone();
+        let reply: Reaction;
+
+        if let Some(value) = read_queue(&pulse.agent_id)
+            .await
+            .map_err(|e| Status::internal(e.to_string()))?
+        {
+            let hashmap = HashMap::new();
+            reply = Reaction {
+                trace_id: agent_id,
+                r#type: value,
+                command_name: "heathcliff".to_string(),
+                parameters: hashmap,
+            };
+        } else {
+            reply = RuleEngine::process(&pulse).await;
+        }
+
         let end = recieved.elapsed();
         info!("Recieved from {}: {:?}  {:.2?}", pulse.agent_id, pulse.telemetry, end);
         info!("Reaction to {} => type: {}, command: {}", reply.trace_id, reply.r#type, reply.command_name);

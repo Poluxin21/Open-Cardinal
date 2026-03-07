@@ -80,6 +80,10 @@ impl RuleEngine {
         
         let value: mlua::Value = lua.load(script_content).eval_async().await?;
         
+        if let mlua::Value::Nil = value {
+            return Err(mlua::Error::RuntimeError("No action".into()));
+        }
+        
         let output: LuaOutput = lua.from_value(value)?;
         
         Ok(output)
@@ -118,8 +122,8 @@ impl RuleEngine {
         })?)?;
 
         redb_api.set("get", lua.create_async_function(|_, key: String| async move {
-            read_db(key.as_str()).await.map_err(mlua::Error::external)?;
-            Ok(())
+            let value = read_db(key.as_str()).await.map_err(mlua::Error::external)?;
+            Ok(value)
         })?)?;
         
         lua.globals().set("redb_api", redb_api)?;
