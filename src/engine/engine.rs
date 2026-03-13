@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use super::models::lua_input::LuaInput;
 use super::models::lua_output::LuaOutput;
 
-use crate::engine::storage::{read_db, write_db};
+use crate::engine::{rules::find_rule_by_agent, storage::{read_db, write_db}};
 #[allow(non_snake_case)]
 use crate::g_rpc::g_rpc::cardinal_core::{Pulse, Reaction};
 
@@ -16,14 +16,16 @@ pub struct RuleEngine;
 impl RuleEngine {
     
     pub async fn process(pulse: &Pulse) -> Reaction {
-        let safe_id = pulse.agent_id.replace("/", "").replace("\\", "").replace("..", "");
-        let agent_dir = Path::new("rules").join(&safe_id);
+        // let safe_id = pulse.agent_id.replace("/", "").replace("\\", "").replace("..", "");
+        // let agent_dir = Path::new("rules").join(&safe_id);
 
-        let target_dir = if fs::try_exists(&agent_dir).await.unwrap_or(false) {
-            agent_dir
-        } else {
-            Path::new("rules").join("default")
-        };
+        // let target_dir = if fs::try_exists(&agent_dir).await.unwrap_or(false) {
+        //     agent_dir
+        // } else {
+        //     Path::new("rules").join("default")
+        // };
+
+        let target_dir = find_rule_by_agent(&pulse.agent_id).await.unwrap_or_else(|_| PathBuf::from("rules/default"));
 
         let mut dir_entries = match fs::read_dir(&target_dir).await {
             Ok(entries) => entries,
