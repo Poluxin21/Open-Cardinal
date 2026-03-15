@@ -1,20 +1,20 @@
-mod kernel;
-mod g_rpc;
-mod engine; 
-mod http_server;
-mod utils;
 mod cli;
+mod engine;
+mod g_rpc;
+mod http_server;
+mod kernel;
+mod utils;
 
 use std::sync::Arc;
 use std::sync::atomic::AtomicUsize;
 
 use clap::Parser;
-use tracing::{info, error};
+use tracing::{error, info};
 
 pub use g_rpc::g_rpc::cardinal_core;
 
-use sysinfo::System;
 use kernel::kernel::run;
+use sysinfo::System;
 
 use crate::cli::args::Cli;
 use crate::cli::command_server::run_command_server;
@@ -34,7 +34,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let sys = System::new_all();
     let _log_guard = init_logger().await;
     let active_connections = Arc::new(AtomicUsize::new(0));
-    let cmd_counter      = active_connections.clone();
+    let cmd_counter = active_connections.clone();
     let grpc_counter = active_connections.clone();
     let monitor_counter = active_connections.clone();
 
@@ -47,7 +47,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     });
 
-    
     info!("Started Cardinal GRPC System");
     tokio::spawn(async {
         if let Err(e) = run_grpc_server(grpc_counter).await {
@@ -71,7 +70,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     tokio::signal::ctrl_c().await?;
     info!("Shutdown signal received");
-    
+
     Ok(())
 }
 

@@ -1,18 +1,20 @@
+use mlua::prelude::*;
 use std::path::PathBuf;
 use tokio::fs;
-use mlua::prelude::*;
 use tracing::error;
 
 use super::models::lua_input::LuaInput;
 
-use crate::engine::{lua_api::{convert_to_proto, inject_redb_api, make_idle, run_script}, rules::find_rule_by_agent};
+use crate::engine::{
+    lua_api::{convert_to_proto, inject_redb_api, make_idle, run_script},
+    rules::find_rule_by_agent,
+};
 #[allow(non_snake_case)]
 use crate::g_rpc::g_rpc::cardinal_core::{Pulse, Reaction};
 
 pub struct RuleEngine;
 
 impl RuleEngine {
-    
     pub async fn process(pulse: &Pulse) -> Reaction {
         // let safe_id = pulse.agent_id.replace("/", "").replace("\\", "").replace("..", "");
         // let agent_dir = Path::new("rules").join(&safe_id);
@@ -23,14 +25,16 @@ impl RuleEngine {
         //     Path::new("rules").join("default")
         // };
 
-        let target_dir = find_rule_by_agent(&pulse.agent_id).await.unwrap_or_else(|_| PathBuf::from("rules/default"));
+        let target_dir = find_rule_by_agent(&pulse.agent_id)
+            .await
+            .unwrap_or_else(|_| PathBuf::from("rules/default"));
 
         let mut dir_entries = match fs::read_dir(&target_dir).await {
             Ok(entries) => entries,
             Err(_) => return make_idle("DIR_NOT_FOUND"),
         };
 
-       let mut scripts: Vec<(PathBuf, String)> = Vec::new();
+        let mut scripts: Vec<(PathBuf, String)> = Vec::new();
 
         while let Ok(Some(entry)) = dir_entries.next_entry().await {
             let path = entry.path();
@@ -40,18 +44,18 @@ impl RuleEngine {
                 }
             }
         }
-        
+
         let lua = Lua::new();
 
         if let Err(e) = inject_redb_api(&lua).await {
             error!("Redb inject error {}", e);
         }
-        
-        let input = LuaInput { 
-            agent_id: &pulse.agent_id, 
-            telemetry: &pulse.telemetry 
+
+        let input = LuaInput {
+            agent_id: &pulse.agent_id,
+            telemetry: &pulse.telemetry,
         };
-        
+
         let mut best_reaction = make_idle("NO_ACTION");
         let mut max_priority = -1;
 
@@ -62,9 +66,11 @@ impl RuleEngine {
                     if priority > max_priority {
                         max_priority = priority;
                         best_reaction = convert_to_proto(output);
-                        if priority >= 1000 { break; }
+                        if priority >= 1000 {
+                            break;
+                        }
                     }
-                },
+                }
                 Err(e) => tracing::error!("⚠️ Error on script {}: {}", path.display(), e),
             }
         }
@@ -74,18 +80,18 @@ impl RuleEngine {
 
     // async fn run_script(lua: &Lua, script_content: &str, input: &LuaInput<'_>) -> LuaResult<LuaOutput> {
     //     let input_value = lua.to_value(input)?;
-        
+
     //     let globals = lua.globals();
     //     globals.set("pulse", input_value)?;
-        
+
     //     let value: mlua::Value = lua.load(script_content).eval_async().await?;
-        
+
     //     if let mlua::Value::Nil = value {
     //         return Err(mlua::Error::RuntimeError("No action".into()));
     //     }
-        
+
     //     let output: LuaOutput = lua.from_value(value)?;
-        
+
     //     Ok(output)
     // }
 
@@ -125,7 +131,7 @@ impl RuleEngine {
     //         let value = read_db(key.as_str()).await.map_err(mlua::Error::external)?;
     //         Ok(value)
     //     })?)?;
-        
+
     //     lua.globals().set("redb_api", redb_api)?;
     //     Ok(())
     // }

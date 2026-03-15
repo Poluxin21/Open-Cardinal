@@ -1,7 +1,7 @@
-use std::{path::Path, sync::Arc, time::Duration};
-use tokio::sync::RwLock;
 use axum::{Router, extract::State, routing::get};
+use std::{path::Path, sync::Arc, time::Duration};
 use tokio::fs;
+use tokio::sync::RwLock;
 
 #[derive(Clone)]
 struct AppState {
@@ -20,7 +20,7 @@ async fn watch_sys_json_file(state: AppState) {
                 }
             }
         }
-        
+
         tokio::time::sleep(Duration::from_secs(2)).await;
     }
 }
@@ -37,7 +37,7 @@ async fn watch_metrics_json_file(state: AppState) {
                 }
             }
         }
-        
+
         tokio::time::sleep(Duration::from_secs(2)).await;
     }
 }
@@ -50,10 +50,9 @@ pub async fn run_http_server() -> Result<(), Box<dyn std::error::Error>> {
     let info_path = Path::new("info/sys.json");
     let metrics_path = Path::new("info/metrics.json");
 
-
     while !info_path.exists() && !metrics_path.exists() {
         println!("Waiting info sys...");
-        tokio::time::sleep(Duration::from_secs(1)).await; 
+        tokio::time::sleep(Duration::from_secs(1)).await;
     }
 
     let initial_sys_content = fs::read_to_string(info_path).await?;

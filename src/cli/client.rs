@@ -1,5 +1,5 @@
-use tokio::net::TcpStream;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::net::TcpStream;
 
 use crate::cli::args::Commands;
 use crate::cli::protocol::{CliRequest, CliResponse, SOCKET_ADDR};
@@ -8,7 +8,10 @@ pub async fn send_command(cmd: &Commands) -> Result<(), Box<dyn std::error::Erro
     let request = command_to_request(cmd);
 
     let mut stream = TcpStream::connect(SOCKET_ADDR).await.map_err(|_| {
-        eprintln!("❌ Não foi possível conectar ao Cardinal daemon em {}.", SOCKET_ADDR);
+        eprintln!(
+            "❌ Não foi possível conectar ao Cardinal daemon em {}.",
+            SOCKET_ADDR
+        );
         eprintln!("   Verifique se o daemon está rodando.");
         std::io::Error::new(std::io::ErrorKind::ConnectionRefused, "daemon offline")
     })?;
@@ -28,10 +31,10 @@ pub async fn send_command(cmd: &Commands) -> Result<(), Box<dyn std::error::Erro
 
 fn command_to_request(cmd: &Commands) -> CliRequest {
     match cmd {
-        Commands::Status      => CliRequest::Status,
-        Commands::Stop        => CliRequest::Stop,
-        Commands::Reload      => CliRequest::Reload,
-        Commands::Stats       => CliRequest::Stats,
+        Commands::Status => CliRequest::Status,
+        Commands::Stop => CliRequest::Stop,
+        Commands::Reload => CliRequest::Reload,
+        Commands::Stats => CliRequest::Stats,
         Commands::Heathcliff { command, args } => CliRequest::Heathcliff {
             command: command.clone(),
             args: args.clone(),
@@ -53,14 +56,17 @@ fn print_response(response: CliResponse) {
                     let val = match value {
                         serde_json::Value::String(s) => s.clone(),
                         serde_json::Value::Number(n) => n.to_string(),
-                        serde_json::Value::Bool(b)   => b.to_string(),
+                        serde_json::Value::Bool(b) => b.to_string(),
                         other => other.to_string(),
                     };
                     println!("│  {:<22} {}", format!("{}:", key), val);
                 }
                 println!("└─────────────────────────────────────────┘");
             } else {
-                println!("{}", serde_json::to_string_pretty(&payload).unwrap_or_default());
+                println!(
+                    "{}",
+                    serde_json::to_string_pretty(&payload).unwrap_or_default()
+                );
             }
         }
     }
