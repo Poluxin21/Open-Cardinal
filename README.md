@@ -6,6 +6,8 @@
 
 Ele atua como o **"sistema imunológico"** das suas aplicações, conectando diversos agentes (Servidores de Jogos, IoT, Microserviços) a um motor lógico **Lua hot-swappable** via **gRPC**.
 
+Devlog / bastidores: https://whatsapp.com/channel/0029VbCnH7b5a23vwR6biY40
+
 ---
 
 ## Documentação
