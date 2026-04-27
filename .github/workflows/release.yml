@@ -28,11 +28,19 @@ jobs:
       - name: Configurar Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Instalar Protoc
-        uses: arduino/setup-protoc@v3
-        with:
-          version: "29.x"
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Instalar Protoc (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler
+
+      - name: Instalar Protoc (macOS)
+        if: matrix.os == 'macos-latest'
+        run: brew install protobuf
+
+      - name: Instalar Protoc (Windows)
+        if: matrix.os == 'windows-latest'
+        run: choco install protoc -y
 
       - name: Build (Release)
         run: cargo build --release
