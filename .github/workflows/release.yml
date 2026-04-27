@@ -1,15 +1,13 @@
 name: Build and Release
-
 on:
   push:
     branches:
       - master
-
 jobs:
   build:
     name: Build no ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
-    
+
     strategy:
       matrix:
         include:
@@ -33,6 +31,7 @@ jobs:
       - name: Instalar Protoc
         uses: arduino/setup-protoc@v3
         with:
+          version: "29.x"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build (Release)
@@ -56,7 +55,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      
+
     steps:
       - name: Baixar Binários
         uses: actions/download-artifact@v4
