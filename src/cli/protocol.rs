@@ -20,11 +20,15 @@ pub enum CliResponse {
 
 impl CliResponse {
     pub fn ok(msg: impl Into<String>) -> Self {
-        Self::Ok { message: msg.into() }
+        Self::Ok {
+            message: msg.into(),
+        }
     }
 
     pub fn error(msg: impl Into<String>) -> Self {
-        Self::Error { message: msg.into() }
+        Self::Error {
+            message: msg.into(),
+        }
     }
 
     pub fn data(payload: serde_json::Value) -> Self {

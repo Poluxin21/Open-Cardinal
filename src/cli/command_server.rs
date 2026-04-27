@@ -3,10 +3,10 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::SystemTime;
 
-use tokio::net::TcpListener;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tracing::{info, warn, error};
 use serde_json::json;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::net::TcpListener;
+use tracing::{error, info, warn};
 
 use crate::cardinal_core::Reaction;
 use crate::cli::protocol::{CliRequest, CliResponse, SOCKET_ADDR};
@@ -63,10 +63,7 @@ pub async fn run_command_server(
     }
 }
 
-async fn handle_request(
-    request: CliRequest,
-    active_connections: Arc<AtomicUsize>,
-) -> CliResponse {
+async fn handle_request(request: CliRequest, active_connections: Arc<AtomicUsize>) -> CliResponse {
     match request {
         CliRequest::Status => {
             let secs = uptime_secs();
@@ -101,7 +98,9 @@ async fn handle_request(
         CliRequest::Stop => {
             info!("Shutdown solicitado via CLI");
             #[cfg(unix)]
-            unsafe { libc::kill(std::process::id() as i32, libc::SIGTERM); }
+            unsafe {
+                libc::kill(std::process::id() as i32, libc::SIGTERM);
+            }
             #[cfg(windows)]
             CliResponse::ok("Cardinal encerrando gracefully...");
             std::process::exit(0);
@@ -114,46 +113,44 @@ async fn handle_request(
             match command.as_str() {
                 "revoke_force" => {
                     let agent = flags.get("agent").map(|s| s.as_str()).unwrap_or("default");
-                    
+
                     revoke_force(agent).await;
 
-                    CliResponse::Ok { message: "Revoke rule with sucess".to_string() }
+                    CliResponse::Ok {
+                        message: "Revoke rule with sucess".to_string(),
+                    }
+                }
 
-                },
-                
                 "force" => {
                     let agent = flags.get("agent").map(|s| s.as_str()).unwrap_or("default");
-                    
-                    let force: Option<i32> = flags
-                    .get("force")
-                    .and_then(|s| s.parse::<i32>().ok());
-                    
-                    let params = HashMap::new(); 
+
+                    let force: Option<i32> = flags.get("force").and_then(|s| s.parse::<i32>().ok());
+
+                    let params = HashMap::new();
 
                     let reaction: Reaction;
 
                     if let Some(action) = force {
-                            if action != 3 {
-                                reaction = Reaction {
-                                    trace_id: agent.to_string(),
-                                    r#type: action,
-                                    command_name: "".to_string(),
-                                    parameters: params 
-                                };
+                        if action != 3 {
+                            reaction = Reaction {
+                                trace_id: agent.to_string(),
+                                r#type: action,
+                                command_name: "".to_string(),
+                                parameters: params,
+                            };
 
-                                
-                                force_reaction(reaction).await;
-                                info!("heathcliff force reaction")
-                            } else {
-                                // Not Implemented!!
-                            }
+                            force_reaction(reaction).await;
+                            info!("heathcliff force reaction")
+                        } else {
+                            // Not Implemented!!
+                        }
                     }
 
                     info!("healthcliff: agent={}", agent);
                     CliResponse::ok(format!("Agent {}", agent))
                 }
-                
-                other     => CliResponse::error(format!("Comando desconhecido: {}", other)),
+
+                other => CliResponse::error(format!("Comando desconhecido: {}", other)),
             }
         }
     }
@@ -163,15 +160,23 @@ fn format_duration(secs: u64) -> String {
     let h = secs / 3600;
     let m = (secs % 3600) / 60;
     let s = secs % 60;
-    if h > 0 { format!("{}h {}m {}s", h, m, s) }
-    else if m > 0 { format!("{}m {}s", m, s) }
-    else { format!("{}s", s) }
+    if h > 0 {
+        format!("{}h {}m {}s", h, m, s)
+    } else if m > 0 {
+        format!("{}m {}s", m, s)
+    } else {
+        format!("{}s", s)
+    }
 }
 
 fn format_memory(kb: u64) -> String {
-    if kb > 1024 * 1024 { format!("{:.1} GB", kb as f64 / 1048576.0) }
-    else if kb > 1024   { format!("{:.1} MB", kb as f64 / 1024.0) }
-    else                { format!("{} KB", kb) }
+    if kb > 1024 * 1024 {
+        format!("{:.1} GB", kb as f64 / 1048576.0)
+    } else if kb > 1024 {
+        format!("{:.1} MB", kb as f64 / 1024.0)
+    } else {
+        format!("{} KB", kb)
+    }
 }
 
 fn read_process_memory() -> u64 {
@@ -181,8 +186,11 @@ fn read_process_memory() -> u64 {
         if let Ok(s) = std::fs::read_to_string(path) {
             for line in s.lines() {
                 if line.starts_with("VmRSS:") {
-                    return line.split_whitespace().nth(1)
-                        .and_then(|v| v.parse().ok()).unwrap_or(0);
+                    return line
+                        .split_whitespace()
+                        .nth(1)
+                        .and_then(|v| v.parse().ok())
+                        .unwrap_or(0);
                 }
             }
         }
@@ -196,7 +204,8 @@ fn parse_flags(args: &[String]) -> std::collections::HashMap<String, String> {
     while i < args.len() {
         if args[i].starts_with("--") {
             let key = args[i].trim_start_matches("--").to_string();
-            let value = args.get(i + 1)
+            let value = args
+                .get(i + 1)
                 .filter(|v| !v.starts_with("--"))
                 .cloned()
                 .unwrap_or_default();

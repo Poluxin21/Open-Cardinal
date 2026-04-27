@@ -1,5 +1,5 @@
-use std::path::Path;
 use redb::{Database, Error, ReadableDatabase, TableDefinition};
+use std::path::Path;
 
 const FORCED_REACTIONS: TableDefinition<&str, i32> = TableDefinition::new("forced_reactions");
 
