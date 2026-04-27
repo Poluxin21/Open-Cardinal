@@ -1,6 +1,10 @@
-use std::{fs::File, io::{BufReader, Error}, path::Path};
-use tracing::info;
 use redb::{Database, TableDefinition};
+use std::{
+    fs::File,
+    io::{BufReader, Error},
+    path::Path,
+};
+use tracing::info;
 
 use crate::kernel::models::sys_json::ConfigJson;
 

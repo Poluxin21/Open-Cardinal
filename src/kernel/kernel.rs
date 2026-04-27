@@ -1,25 +1,34 @@
-use std::{io::Error, path::Path, sync::{Arc, atomic::{AtomicUsize, Ordering}}};
-use tracing::error;
+use crate::kernel::{
+    models::sys_json::ConfigJson,
+    monitor::{luacheck::lua_check, monitor, watcher::watch_file},
+};
+use std::{
+    io::Error,
+    path::Path,
+    sync::{
+        Arc,
+        atomic::{AtomicUsize, Ordering},
+    },
+};
 use sysinfo::System;
-use tokio::{fs, time::{Duration, sleep}};
-use crate::kernel::{models::sys_json::ConfigJson, monitor::{luacheck::lua_check, monitor, watcher::watch_file}};
+use tokio::{
+    fs,
+    time::{Duration, sleep},
+};
+use tracing::error;
 
-pub async fn run(mut sys: System, active_connections_monitor: Arc<AtomicUsize>) -> Result<(), Box<dyn std::error::Error>> {
-    let dirs = [
-        "logs",
-        "rules/default",
-        "config"
-    ];
+pub async fn run(
+    mut sys: System,
+    active_connections_monitor: Arc<AtomicUsize>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let dirs = ["logs", "rules/default", "config"];
 
     for dir in dirs {
         fs::create_dir_all(dir).await?;
     }
 
-    let files = [
-        "rules/default/default.lua",
-        "config/config.json"
-    ];
-    
+    let files = ["rules/default/default.lua", "config/config.json"];
+
     for file in files {
         if !Path::new(file).exists() {
             fs::File::create(file).await?;
@@ -56,7 +65,13 @@ pub async fn run(mut sys: System, active_connections_monitor: Arc<AtomicUsize>) 
         let current_connections = active_connections_monitor.load(Ordering::Relaxed) as i32;
 
         let payload = monitor::collect_sys(&mut sys)?;
-        monitor::persist(&payload, &total_agents, &agents_detected, current_connections).await?;
+        monitor::persist(
+            &payload,
+            &total_agents,
+            &agents_detected,
+            current_connections,
+        )
+        .await?;
 
         sleep(Duration::from_secs(1)).await;
     }
@@ -88,7 +103,7 @@ async fn get_total_rules() -> Result<i32, Box<dyn std::error::Error>> {
 }
 
 async fn get_total_agents() -> Result<i32, Box<dyn std::error::Error>> {
-    let mut rules_dir= fs::read_dir("rules").await?;
+    let mut rules_dir = fs::read_dir("rules").await?;
     let mut agentsint = 0;
     while let Some(entry) = rules_dir.next_entry().await? {
         if entry.path().is_dir() {
@@ -96,17 +111,16 @@ async fn get_total_agents() -> Result<i32, Box<dyn std::error::Error>> {
                 continue;
             }
 
-            agentsint+=1;
+            agentsint += 1;
         }
     }
 
     Ok(agentsint)
-
 }
 
 async fn setup_config_file() -> Result<(), Error> {
-    let filename= "open_cardinal.redb";
-    
+    let filename = "open_cardinal.redb";
+
     let config = ConfigJson {
         grpc_port: 50051,
         http_port: 8080,
@@ -119,32 +133,31 @@ async fn setup_config_file() -> Result<(), Error> {
 }
 
 async fn check_all_lua_files() -> Result<(), Error> {
-        let mut rules_dir= fs::read_dir("rules").await?;
-        
-        while let Some(entry) = rules_dir.next_entry().await? {
-            let path = entry.path();
+    let mut rules_dir = fs::read_dir("rules").await?;
 
-            if path.is_dir() {
-                let mut sub_dir = fs::read_dir(path).await?;
+    while let Some(entry) = rules_dir.next_entry().await? {
+        let path = entry.path();
 
-                while let Some(file) = sub_dir.next_entry().await? {
-                    let file_path = file.path();
+        if path.is_dir() {
+            let mut sub_dir = fs::read_dir(path).await?;
 
-                    if file_path.is_file()
-                        && file_path.extension().and_then(|e| e.to_str()) == Some("lua")
-                    {
-                        let script_content = tokio::fs::read_to_string(&file_path).await?;
-                        let file_name = file_path
+            while let Some(file) = sub_dir.next_entry().await? {
+                let file_path = file.path();
+
+                if file_path.is_file()
+                    && file_path.extension().and_then(|e| e.to_str()) == Some("lua")
+                {
+                    let script_content = tokio::fs::read_to_string(&file_path).await?;
+                    let file_name = file_path
                         .file_name()
                         .and_then(|n| n.to_str())
                         .unwrap_or("<unknown>");
-                        
-                        let _ = lua_check(&script_content, file_name).await;
-                        
-                    }
+
+                    let _ = lua_check(&script_content, file_name).await;
                 }
             }
         }
+    }
 
-        Ok(())
+    Ok(())
 }
