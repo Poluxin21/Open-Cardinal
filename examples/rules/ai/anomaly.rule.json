@@ -1,0 +1,34 @@
+{
+  "type": "model",
+  "model": "anomaly-v1",
+  "features": [
+    {
+      "key": "cpu_temp",
+      "default": 0
+    },
+    {
+      "key": "fuel",
+      "scale": 0.01
+    }
+  ],
+  "decide": {
+    "mode": "threshold",
+    "bands": [
+      {
+        "ge": 0.9,
+        "action": "SHUTDOWN",
+        "cmd_name": "AI_ANOMALY",
+        "priority": 400,
+        "params": {
+          "reason": "anomaly"
+        }
+      },
+      {
+        "ge": 0.6,
+        "action": "RESTART",
+        "cmd_name": "AI_SOFT_RESTART",
+        "priority": 200
+      }
+    ]
+  }
+}

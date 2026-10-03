@@ -1,0 +1,64 @@
+# Open Cardinal on Docker Swarm: one task per labelled host, using the HOST network so that
+# each node is reached at its host's IP — exactly the "list of host IPs" model.
+#
+#   1. Label the hosts that should run Cardinal (three or five, an odd number):
+#        docker node update --label-add cardinal=true <node>
+#   2. Create the secrets once:
+#        open-cardinal raft keygen | docker secret create cardinal_cluster_secret -
+#        open-cardinal raft keygen | docker secret create cardinal_admin_token -
+#   3. Put the HOST IPs of those nodes in CARDINAL_RAFT_PEERS below, then:
+#        docker stack deploy -c stack.yml cardinal
+#   4. docker exec $(docker ps -qf name=cardinal) /usr/local/bin/open-cardinal raft members
+#
+# Why host networking: Swarm overlay tasks get ephemeral IPs, and a Raft member is identified
+# by its IP. A host IP is stable. (Prefer overlay + ingress only for the *agent* API if you do
+# not need consensus across hosts.)
+#
+# Cardinal detects Swarm through the templated CARDINAL_SWARM_SERVICE variable below.
+
+services:
+  cardinal:
+    image: open-cardinal:latest
+    # one task on every labelled node
+    deploy:
+      mode: global
+      placement:
+        constraints: ["node.labels.cardinal == true"]
+      update_config:
+        parallelism: 1          # never restart two members at once
+        order: stop-first       # the data volume and the host IP cannot be shared
+        delay: 20s
+        failure_action: rollback
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+    stop_grace_period: 30s      # lets a leader hand over leadership before it exits
+    networks: [hostnet]
+    environment:
+      CARDINAL_SWARM_SERVICE: "{{.Service.Name}}"
+      CARDINAL_RAFT_PEERS: "10.0.0.11,10.0.0.12,10.0.0.13"   # <- the hosts' IPs
+      CARDINAL_CLUSTER_SECRET_FILE: /run/secrets/cardinal_cluster_secret
+      CARDINAL_ADMIN_TOKEN_FILE: /run/secrets/cardinal_admin_token
+      CARDINAL_LOG_FORMAT: json
+    secrets: [cardinal_cluster_secret, cardinal_admin_token]
+    volumes:
+      - cardinal-data:/var/lib/cardinal
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/open-cardinal", "health"]
+      interval: 10s
+      timeout: 3s
+      start_period: 20s
+
+networks:
+  hostnet:
+    external: true
+    name: host
+
+volumes:
+  cardinal-data:
+
+secrets:
+  cardinal_cluster_secret:
+    external: true
+  cardinal_admin_token:
+    external: true

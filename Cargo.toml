@@ -2,30 +2,85 @@
 name = "open-cardinal"
 version = "0.1.0"
 edition = "2024"
+description = "Deterministic sidecar supervisor for critical systems (Observe-Decide-Act)"
+license = "MIT"
+default-run = "open-cardinal"
+
+[lib]
+name = "open_cardinal"
+path = "src/lib.rs"
+
+[[bin]]
+name = "open-cardinal"
+path = "src/main.rs"
+
+[[bin]]
+name = "client"
+path = "src/bin/client.rs"
+
+[features]
+default = ["lua", "wasm", "tls"]
+# Rule backends. `lua` is the legacy backend and stays on by default.
+lua = ["dep:mlua"]
+wasm = ["dep:wasmi"]
+# TLS / mTLS for the agent API, the HTTP service and the Raft transport, plus the certificate
+# generator (`open-cardinal tls ...`).
+tls = ["tonic/tls-ring", "dep:axum-server", "dep:rustls", "dep:rustls-pemfile", "dep:rcgen", "dep:time"]
+# Embedded ONNX Runtime (models-as-rules). Opt-in: pulls in the onnxruntime binaries.
+onnx = ["dep:ort"]
+# Prompt rules: a generative ONNX model evaluates a natural-language rule.
+prompt = ["onnx", "dep:tokenizers"]
 
 [dependencies]
-rand = "0.8"
-protobuf = "3.7.2"
-uguid = "2.2.1"
+# runtime / network
 tokio = { version = "1", features = ["full"] }
-sysinfo = "0.30"
-serde = { version = "1.0.228", features = ["derive"] }
-serde_json = "1.0.149"
-tonic = "0.14.3"
-prost = "0.14.3"
-tokio-stream = "0.1"
-tonic-prost = "0.14.3"
-mlua = { version = "0.11.6", features = ["lua55", "vendored", "serialize", "async", "send"] }
-clap = { version = "4.4", features = ["derive"] }
+tonic = "0.14"
+axum-server = { version = "0.8", default-features = false, features = ["tls-rustls-no-provider"], optional = true }
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"], optional = true }
+rustls-pemfile = { version = "2", optional = true }
+rcgen = { version = "0.14", features = ["x509-parser"], optional = true }
+time = { version = "0.3", optional = true }
+prost = "0.14"
+tonic-prost = "0.14"
+axum = "0.8"
+tokio-stream = { version = "0.1", features = ["net"] }
+
+# data / persistence
+redb = "3.1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# rule backends
+mlua = { version = "0.11", features = ["lua55", "vendored", "serialize"], optional = true }
+wasmi = { version = "2", optional = true }
+ort = { version = "=2.0.0-rc.13", optional = true }
+tokenizers = { version = "0.23", default-features = false, features = ["onig"], optional = true }
+
+# misc
+clap = { version = "4.4", features = ["derive", "env"] }
 tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["fmt", "time"] }
+tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter", "json"] }
 tracing-appender = "0.2"
-chrono = "0.4"
-memmap2 = "0.9.9"
-axum = "0.8.8"
-redb = "3.1.0"
-notify = "8.2.0"
-libc = "0.2.182"
+sysinfo = "0.30"
+notify = "8"
+arc-swap = "1"
+if-addrs = "0.13"
+thiserror = "2"
+sha2 = "0.10"
+hmac = "0.12"
+subtle = "2"
+rand = "0.8"
+
+[dev-dependencies]
+tempfile = "3"
+wat = "1"
+tokio-rustls = { version = "0.26", default-features = false, features = ["ring"] }
 
 [build-dependencies]
-tonic-prost-build = "0.14.3"
+tonic-prost-build = "0.14"
+protoc-bin-vendored = "3"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = "symbols"
