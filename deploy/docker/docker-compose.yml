@@ -1,0 +1,72 @@
+# Three-node Open Cardinal cluster on plain Docker (no Swarm, no Kubernetes).
+#
+#   1. Create the secrets once:
+#        mkdir -p secrets
+#        docker run --rm open-cardinal raft keygen        > secrets/cluster.secret
+#        docker run --rm open-cardinal raft keygen        > secrets/admin.token
+#   2. docker compose up -d
+#   3. docker compose exec cardinal1 /usr/local/bin/open-cardinal raft members
+#
+# Each node has a fixed IP on a user-defined network and the cluster is described ONLY by
+# those IPs (CARDINAL_RAFT_PEERS). Ports, node identities, the leader and the rest of the
+# membership are discovered automatically. A node finds out which of the listed IPs it is by
+# looking at its own interfaces, so no per-node configuration is needed beyond the IP itself.
+
+x-cardinal: &cardinal
+  image: open-cardinal
+  restart: unless-stopped
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: ["no-new-privileges:true"]
+  environment: &env
+    CARDINAL_RAFT_PEERS: "172.28.0.11,172.28.0.12,172.28.0.13"
+    CARDINAL_CLUSTER_SECRET_FILE: /run/secrets/cluster_secret
+    CARDINAL_ADMIN_TOKEN_FILE: /run/secrets/admin_token
+    CARDINAL_LOG_FORMAT: json
+  secrets: [cluster_secret, admin_token]
+  tmpfs: ["/tmp"]
+  healthcheck:
+    test: ["CMD", "/usr/local/bin/open-cardinal", "health"]
+    interval: 10s
+    timeout: 3s
+    start_period: 15s
+
+services:
+  cardinal1:
+    <<: *cardinal
+    hostname: cardinal1
+    networks: { cardinal: { ipv4_address: 172.28.0.11 } }
+    volumes: ["cardinal1-data:/var/lib/cardinal", "./rules:/var/lib/cardinal/rules:ro"]
+    ports: ["50051:50051", "8081:8080"]
+
+  cardinal2:
+    <<: *cardinal
+    hostname: cardinal2
+    networks: { cardinal: { ipv4_address: 172.28.0.12 } }
+    volumes: ["cardinal2-data:/var/lib/cardinal", "./rules:/var/lib/cardinal/rules:ro"]
+    ports: ["50052:50051", "8082:8080"]
+
+  cardinal3:
+    <<: *cardinal
+    hostname: cardinal3
+    networks: { cardinal: { ipv4_address: 172.28.0.13 } }
+    volumes: ["cardinal3-data:/var/lib/cardinal", "./rules:/var/lib/cardinal/rules:ro"]
+    ports: ["50053:50051", "8083:8080"]
+
+networks:
+  cardinal:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/24
+
+volumes:
+  cardinal1-data:
+  cardinal2-data:
+  cardinal3-data:
+
+secrets:
+  cluster_secret:
+    file: ./secrets/cluster.secret
+  admin_token:
+    file: ./secrets/admin.token

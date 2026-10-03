@@ -1,0 +1,14 @@
+{
+  "peers": [
+    "10.0.0.11",
+    "10.0.0.12",
+    "10.0.0.13"
+  ],
+  "port": 50052,
+  "reads": "linearizable",
+  "tls": {
+    "cert_file": "certs/node.pem",
+    "key_file": "certs/node.key",
+    "ca_file": "certs/ca.pem"
+  }
+}

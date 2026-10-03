@@ -1,0 +1,32 @@
+{
+  "type": "prompt",
+  "model": "qwen-small",
+  "prompt": "Shut the agent down if the engine temperature is above 90 degrees. Restart it if the vibration is above 7. Otherwise do nothing.",
+  "include_telemetry": [
+    "engine_temp",
+    "vibration"
+  ],
+  "choices": [
+    {
+      "label": "ok",
+      "action": "IDLE"
+    },
+    {
+      "label": "restart",
+      "action": "RESTART",
+      "cmd_name": "AI_RESTART",
+      "priority": 300
+    },
+    {
+      "label": "shutdown",
+      "action": "SHUTDOWN",
+      "cmd_name": "AI_CUTOFF",
+      "priority": 400,
+      "params": {
+        "reason": "overheat"
+      }
+    }
+  ],
+  "default": "ok",
+  "min_confidence": 0.6
+}

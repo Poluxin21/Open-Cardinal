@@ -28,22 +28,9 @@ jobs:
       - name: Configurar Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Instalar Protoc (Linux)
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y protobuf-compiler
-
-      - name: Instalar Protoc (macOS)
-        if: matrix.os == 'macos-latest'
-        run: brew install protobuf
-
-      - name: Instalar Protoc (Windows)
-        if: matrix.os == 'windows-latest'
-        run: choco install protoc -y
-
+      # protoc is no longer needed: build.rs uses the vendored binary (protoc-bin-vendored)
       - name: Build (Release)
-        run: cargo build --release
+        run: cargo build --release --locked
 
       - name: Renomear Binário
         shell: bash

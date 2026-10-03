@@ -1,0 +1,17 @@
+target
+.git
+.github
+.idea
+deploy
+docs
+examples
+tests
+logs
+info
+config
+rules
+tenants
+models
+*.redb
+*.md
+!README.md
