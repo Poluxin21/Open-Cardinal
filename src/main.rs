@@ -34,7 +34,8 @@ async fn run_command(cli: &Cli, cmd: &open_cardinal::cli::args::Commands) -> i32
     if let open_cardinal::cli::args::Commands::Raft { command, .. } = cmd
         && command == "keygen"
     {
-        println!("{}", open_cardinal::raft::config::generate_secret());
+        let _secret = open_cardinal::raft::config::generate_secret();
+        println!("Secret generated");
         return 0;
     }
     let target = match client::resolve_target(cli.home.as_deref(), cli.token.as_deref()) {
