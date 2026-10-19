@@ -10,3 +10,12 @@
 /src/generated
 [D][d]ockerfile.cross
 [C][c]ross.toml
+# Runtime state, secrets and certificates (never commit these)
+/tenants
+/models
+/certs
+/data
+*.redb
+/config/*.token
+/config/*.secret
+/config/audit.key

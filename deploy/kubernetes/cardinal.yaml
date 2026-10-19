@@ -1,0 +1,146 @@
+# Open Cardinal on Kubernetes: a 3-node Raft cluster that shares memory between hosts.
+#
+# A Raft member is identified by its IP, so members need STABLE addresses. The simplest way to
+# get them in Kubernetes is the host network: every pod uses its node's IP, one pod per node.
+# You list those node IPs (below, in the ConfigMap) — nothing else about the cluster.
+#
+#   1. kubectl create namespace cardinal
+#   2. Secrets (once):
+#        kubectl -n cardinal create secret generic cardinal-secrets \
+#          --from-literal=cluster-secret="$(open-cardinal raft keygen)" \
+#          --from-literal=admin-token="$(open-cardinal raft keygen)"
+#   3. Put the three node IPs in the ConfigMap, label/choose the nodes (nodeSelector below).
+#   4. kubectl apply -f cardinal.yaml
+#   5. kubectl -n cardinal exec cardinal-0 -- /usr/local/bin/open-cardinal raft members
+#
+# Rolling updates: readiness requires "member of the cluster AND leader known", so the
+# StatefulSet restarts one pod at a time and only after the cluster is healthy again; a
+# terminating leader hands over leadership first (SIGTERM → step down).
+#
+# Using the pod network instead? That works with a CNI that assigns fixed IPs (Calico
+# `cni.projectcalico.org/ipAddrs`, Cilium IPAM pools) — set hostNetwork: false and list those
+# pod IPs. Plain ephemeral pod IPs are not suitable as Raft identities.
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cardinal-config
+  namespace: cardinal
+data:
+  # The IPs of the hosts that share memory. That is all the cluster configuration there is.
+  CARDINAL_RAFT_PEERS: "10.0.0.11,10.0.0.12,10.0.0.13"
+  CARDINAL_LOG_FORMAT: "json"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cardinal
+  namespace: cardinal
+spec:
+  # gRPC for agents. Any member can serve any agent (state is replicated), so a plain
+  # ClusterIP Service in front of the pods is fine.
+  selector: { app: cardinal }
+  ports:
+    - { name: grpc, port: 50051, targetPort: 50051 }
+    - { name: http, port: 8080, targetPort: 8080 }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cardinal-headless
+  namespace: cardinal
+spec:
+  clusterIP: None
+  selector: { app: cardinal }
+  ports:
+    - { name: raft, port: 50052, targetPort: 50052 }
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: cardinal
+  namespace: cardinal
+spec:
+  maxUnavailable: 1            # never lose the quorum to voluntary disruptions
+  selector:
+    matchLabels: { app: cardinal }
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: cardinal
+  namespace: cardinal
+spec:
+  serviceName: cardinal-headless
+  replicas: 3
+  podManagementPolicy: OrderedReady
+  updateStrategy: { type: RollingUpdate }
+  selector:
+    matchLabels: { app: cardinal }
+  template:
+    metadata:
+      labels: { app: cardinal }
+    spec:
+      hostNetwork: true                       # stable IP = the node's IP
+      dnsPolicy: ClusterFirstWithHostNet
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 30
+      affinity:
+        podAntiAffinity:                      # one member per node
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels: { app: cardinal }
+              topologyKey: kubernetes.io/hostname
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: cardinal
+          image: open-cardinal:latest
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef: { name: cardinal-config }
+          env:
+            - name: CARDINAL_CLUSTER_SECRET
+              valueFrom: { secretKeyRef: { name: cardinal-secrets, key: cluster-secret } }
+            - name: CARDINAL_ADMIN_TOKEN
+              valueFrom: { secretKeyRef: { name: cardinal-secrets, key: admin-token } }
+          ports:
+            - { name: grpc, containerPort: 50051 }
+            - { name: http, containerPort: 8080 }
+            - { name: raft, containerPort: 50052 }
+          startupProbe:
+            httpGet: { path: /healthz, port: http }
+            periodSeconds: 2
+            failureThreshold: 30
+          livenessProbe:
+            httpGet: { path: /healthz, port: http }
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet: { path: /readyz, port: http }
+            periodSeconds: 5
+            failureThreshold: 2
+          resources:
+            requests: { cpu: 100m, memory: 64Mi }
+            limits: { memory: 512Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: [ALL] }
+          volumeMounts:
+            - { name: data, mountPath: /var/lib/cardinal }
+            - { name: tmp, mountPath: /tmp }
+      volumes:
+        - name: tmp
+          emptyDir: {}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests: { storage: 1Gi }

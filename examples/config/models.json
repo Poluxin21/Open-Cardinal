@@ -1,0 +1,19 @@
+{
+  "models": [
+    {
+      "name": "anomaly-v1",
+      "path": "anomaly-v1.onnx",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "intra_threads": 1,
+      "pool": 2
+    },
+    {
+      "name": "qwen-small",
+      "path": "qwen/model.onnx",
+      "tokenizer": "qwen/tokenizer.json",
+      "chat_template": "chatml",
+      "max_context": 1024,
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ]
+}

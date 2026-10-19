@@ -1,0 +1,31 @@
+{
+  "grpc_port": 50051,
+  "http_port": 8080,
+  "db_file": "open_cardinal.redb",
+  "bind": "auto",
+  "security": {
+    "mode": "auto",
+    "tls": {
+      "cert_file": "certs/server.pem",
+      "key_file": "certs/server.key",
+      "client_ca_file": "certs/ca.pem"
+    }
+  },
+  "limits": {
+    "rule_timeout_ms": 250,
+    "lua_instructions": 5000000,
+    "wasm_fuel": 20000000,
+    "rate_limit_per_sec": 0
+  },
+  "log": {
+    "output": "auto",
+    "format": "text",
+    "level": "info"
+  },
+  "audit": {
+    "enabled": true,
+    "decisions": "actions",
+    "retention_records": 500000,
+    "telemetry": "full"
+  }
+}

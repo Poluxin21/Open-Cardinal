@@ -1,0 +1,32 @@
+{
+  "tenants": [
+    {
+      "id": "acme",
+      "display_name": "Acme Foods",
+      "enabled": true,
+      "api_keys": [
+        {
+          "label": "fleet-eu",
+          "sha256": "3b06e9be13cc4452a8de37f45be73812347af1664f4796682e54985d655c82e5",
+          "agent_prefix": "eu-"
+        }
+      ],
+      "limits": {
+        "rate_limit_per_sec": 500,
+        "rate_limit_burst": 1000,
+        "kv_max_entries": 50000
+      },
+      "rules": {
+        "lua": false,
+        "wasm": true
+      },
+      "ai": {
+        "enabled": true,
+        "models": [
+          "anomaly-v1"
+        ],
+        "max_priority": 500
+      }
+    }
+  ]
+}
